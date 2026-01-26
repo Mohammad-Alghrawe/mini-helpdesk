@@ -1,0 +1,32 @@
+services:
+  api:
+    build:
+      context: ./backend
+    container_name: minihelpdesk_api
+    environment:
+      - APP_HOST=0.0.0.0
+      - APP_PORT=8080
+      - DB_PATH=/data/helpdesk.db
+    volumes:
+      - sqlite_data:/data
+    ports:
+      - "8080:8080"
+    networks:
+      - minihelpdesk_net
+
+  web:
+    build:
+      context: ./frontend
+    container_name: minihelpdesk_web
+    ports:
+      - "8081:80"
+    depends_on:
+      - api
+    networks:
+      - minihelpdesk_net
+
+volumes:
+  sqlite_data:
+
+networks:
+  minihelpdesk_net:

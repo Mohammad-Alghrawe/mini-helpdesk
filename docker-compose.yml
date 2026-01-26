@@ -14,16 +14,16 @@ services:
     networks:
       - minihelpdesk_net
 
-  web:
-    build:
-      context: ./frontend
-    container_name: minihelpdesk_web
-    ports:
-      - "8081:80"
-    depends_on:
-      - api
-    networks:
-      - minihelpdesk_net
+  #web:
+  # build:
+  #    context: ./frontend
+  #  container_name: minihelpdesk_web
+  #  ports:
+  #    - "8081:80"
+  #  depends_on:
+  #    - api
+  #  networks:
+  #    - minihelpdesk_net
 
 volumes:
   sqlite_data:

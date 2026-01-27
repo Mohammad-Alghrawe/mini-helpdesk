@@ -28,13 +28,31 @@
     </div>
   </div>
 
+  <!-- FILTER BAR -->
+  <div class="filter-bar">
+    <input
+      type="text"
+      placeholder="Search tickets..."
+      [(ngModel)]="searchText"
+      (input)="applyFilters()"
+      class="search-input"
+    />
+
+    <select [(ngModel)]="statusFilter" (change)="applyFilters()" class="select-filter">
+      <option value="all">All Statuses</option>
+      <option value="open">Open</option>
+      <option value="in_progress">In Progress</option>
+      <option value="closed">Closed</option>
+    </select>
+  </div>
+
   <!-- ERROR MESSAGE -->
   <div *ngIf="errorMsg" class="error hint">{{ errorMsg }}</div>
 
   <!-- TICKET LIST -->
   <ng-container *ngIf="!loading; else loadingTpl">
     <div class="list">
-      <div class="ticket-card" *ngFor="let t of tickets" [routerLink]="['/tickets', t.id]">
+      <div class="ticket-card" *ngFor="let t of filteredTickets" [routerLink]="['/tickets', t.id]">
         <h3>{{ t.title }}</h3>
         <p>{{ t.description }}</p>
 

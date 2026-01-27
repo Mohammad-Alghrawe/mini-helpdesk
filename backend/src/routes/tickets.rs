@@ -45,7 +45,12 @@ async fn update_ticket(
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/tickets", post(create_ticket).get(list_tickets))
-        .route("/tickets/:id", get(get_ticket_by_id).patch(update_ticket))
+        .route(
+            "/tickets/:id",
+            get(get_ticket_by_id)
+                .patch(update_ticket)
+                .delete(delete_ticket),
+        )
 }
 
 async fn create_ticket(
@@ -109,5 +114,28 @@ async fn get_ticket_by_id(
             StatusCode::NOT_FOUND,
             Json(serde_json::json!({ "error": "ticket not found" })),
         )),
+    }
+}
+
+async fn delete_ticket(
+    State(state): State<AppState>,
+    axum::extract::Path(id): axum::extract::Path<String>,
+) -> Result<StatusCode, (StatusCode, Json<serde_json::Value>)> {
+    let deleted = ticket_repository::delete_ticket(&state.db, &id)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({"error": "db error", "details": e.to_string()})),
+            )
+        })?;
+
+    if deleted {
+        Ok(StatusCode::NO_CONTENT) // 204
+    } else {
+        Err((
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({"error": "ticket not found"})),
+        ))
     }
 }

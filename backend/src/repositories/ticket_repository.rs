@@ -177,3 +177,18 @@ pub async fn get_ticket_by_id(
         updated_at: r.get::<String, _>("updated_at"),
     }))
 }
+
+pub async fn delete_ticket(pool: &SqlitePool, id: &str) -> Result<bool, sqlx::Error> {
+    let result = sqlx::query(
+        r#"
+        DELETE FROM tickets
+        WHERE id = ?
+        "#,
+    )
+    .bind(id)
+    .execute(pool)
+    .await?;
+
+    // rows_affected() == 1 means deleted
+    Ok(result.rows_affected() == 1)
+}

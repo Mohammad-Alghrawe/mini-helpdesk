@@ -31,6 +31,7 @@ export class TicketListComponent implements OnInit {
   tickets: Ticket[] = [];
   searchText = '';
   statusFilter: 'all' | 'open' | 'in_progress' | 'closed' = 'all';
+  sortOption: 'newest' | 'oldest' | 'priority' = 'newest';
   filteredTickets: Ticket[] = [];
   stats = {
   open: 0,
@@ -93,6 +94,26 @@ applyFilters() {
   if (this.statusFilter !== 'all') {
     filtered = filtered.filter(t => t.status === this.statusFilter);
   }
+
+  // Apply sorting
+if (this.sortOption === 'newest') {
+  filtered = filtered.sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+}
+
+if (this.sortOption === 'oldest') {
+  filtered = filtered.sort(
+    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  );
+}
+
+if (this.sortOption === 'priority') {
+  const priorityOrder = { high: 3, medium: 2, low: 1 };
+  filtered = filtered.sort(
+    (a, b) => priorityOrder[b.priority] - priorityOrder[a.priority]
+  );
+}
 
   this.filteredTickets = filtered;
 }

@@ -44,6 +44,12 @@
       <option value="in_progress">In Progress</option>
       <option value="closed">Closed</option>
     </select>
+    <!-- ⭐ SORTING DROPDOWN -->
+    <select [(ngModel)]="sortOption" (change)="applyFilters()" class="select-filter">
+      <option value="newest">Newest First</option>
+      <option value="oldest">Oldest First</option>
+      <option value="priority">Priority High → Low</option>
+    </select>
   </div>
 
   <!-- ERROR MESSAGE -->

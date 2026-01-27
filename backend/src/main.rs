@@ -1,6 +1,8 @@
 use axum::{routing::get, Json, Router};
 use serde_json::json;
 use std::net::SocketAddr;
+mod models;
+mod repositories;
 
 async fn health() -> Json<serde_json::Value> {
     Json(json!({ "status": "ok" }))

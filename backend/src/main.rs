@@ -2,6 +2,7 @@ use axum::{routing::get, Json, Router};
 use serde_json::json;
 use sqlx::SqlitePool;
 use std::net::SocketAddr;
+use tower_http::cors::{Any, CorsLayer};
 
 mod models;
 mod repositories;
@@ -44,11 +45,17 @@ async fn main() {
     // App state
     let app_state = state::AppState { db: pool.clone() };
 
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any);
+
     // Router
     let app = Router::new()
         .route("/health", get(health))
         .nest("/api", routes::tickets::router())
-        .with_state(app_state);
+        .with_state(app_state)
+        .layer(cors);
 
     let addr: SocketAddr = format!("{host}:{port}").parse().expect("invalid host/port");
     println!("API listening on http://{addr}");

@@ -28,6 +28,11 @@ export class TicketListComponent implements OnInit {
   loading = true;
   errorMsg: string | null = null;
   tickets: Ticket[] = [];
+  stats = {
+  open: 0,
+  in_progress: 0,
+  closed: 0,
+};
 
   ngOnInit(): void {
     this.load();
@@ -43,6 +48,7 @@ export class TicketListComponent implements OnInit {
       .subscribe({
         next: (res) => {
           this.tickets = res?.tickets ?? [];
+          this.calculateStats(this.tickets);
           this.loading = false;
           this.cdr.detectChanges(); // ✅ Force change detection
         },
@@ -56,4 +62,13 @@ export class TicketListComponent implements OnInit {
         },
       });
   }
+
+  private calculateStats(tickets: Ticket[]) {
+  this.stats = {
+    open: tickets.filter(t => t.status === 'open').length,
+    in_progress: tickets.filter(t => t.status === 'in_progress').length,
+    closed: tickets.filter(t => t.status === 'closed').length,
+  };
+}
+
 }

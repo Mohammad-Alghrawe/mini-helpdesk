@@ -1,0 +1,42 @@
+<div class="container">
+  <div *ngIf="loading()">Loading ticket...</div>
+  <div *ngIf="error()" class="error">{{ error() }}</div>
+
+  <div *ngIf="ticket() && !loading()">
+    <h2>Ticket Details</h2>
+
+    <p><strong>Title:</strong> {{ ticket()?.title }}</p>
+    <p><strong>Description:</strong> {{ ticket()?.description }}</p>
+
+    <p><strong>Created:</strong> {{ ticket()?.created_at }}</p>
+    <p><strong>Updated:</strong> {{ ticket()?.updated_at }}</p>
+
+    <hr />
+
+    <label>
+      Status:
+      <select [(ngModel)]="ticket()!.status">
+        <option value="open">Open</option>
+        <option value="in_progress">In Progress</option>
+        <option value="closed">Closed</option>
+      </select>
+    </label>
+
+    <br /><br />
+
+    <label>
+      Priority:
+      <select [(ngModel)]="ticket()!.priority">
+        <option value="low">Low</option>
+        <option value="medium">Medium</option>
+        <option value="high">High</option>
+      </select>
+    </label>
+
+    <br /><br />
+
+    <button (click)="saveChanges()" [disabled]="saving()">
+      {{ saving() ? 'Saving...' : 'Save Changes' }}
+    </button>
+  </div>
+</div>

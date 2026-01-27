@@ -1,44 +1,82 @@
 <div class="page">
-  <div class="header">
-    <h1>Tickets</h1>
+  <!-- HEADER + STATS + ACTIONS -->
+  <div class="dashboard-header">
+    <h2>Tickets</h2>
 
+    <!-- STATS BLOCK -->
+    <div class="stats">
+      <div class="stat open">
+        <span class="count">{{ stats.open }}</span>
+        <span class="label">Open</span>
+      </div>
+
+      <div class="stat progress">
+        <span class="count">{{ stats.in_progress }}</span>
+        <span class="label">In Progress</span>
+      </div>
+
+      <div class="stat closed">
+        <span class="count">{{ stats.closed }}</span>
+        <span class="label">Closed</span>
+      </div>
+    </div>
+
+    <!-- ACTIONS -->
     <div class="actions">
-      <a class="btn" routerLink="/tickets/new">+ New Ticket</a>
-      <button class="btn secondary" (click)="load()" [disabled]="loading">
-        {{ loading ? 'Loading...' : 'Refresh' }}
-      </button>
+      <button routerLink="/tickets/new" class="btn primary">+ New Ticket</button>
+      <button (click)="load()" class="btn">Refresh</button>
     </div>
   </div>
 
-  <div class="hint error" *ngIf="errorMsg">{{ errorMsg }}</div>
+  <!-- FILTER BAR -->
+  <div class="filter-bar">
+    <input
+      type="text"
+      placeholder="Search tickets..."
+      [(ngModel)]="searchText"
+      (input)="applyFilters()"
+      class="search-input"
+    />
 
-  <div class="card" *ngIf="loading">Loading tickets...</div>
-
-  <div class="card" *ngIf="!loading && tickets.length === 0 && !errorMsg">
-    No tickets yet. Create your first one.
+    <select [(ngModel)]="statusFilter" (change)="applyFilters()" class="select-filter">
+      <option value="all">All Statuses</option>
+      <option value="open">Open</option>
+      <option value="in_progress">In Progress</option>
+      <option value="closed">Closed</option>
+    </select>
+    <!-- ⭐ SORTING DROPDOWN -->
+    <select [(ngModel)]="sortOption" (change)="applyFilters()" class="select-filter">
+      <option value="newest">Newest First</option>
+      <option value="oldest">Oldest First</option>
+      <option value="priority">Priority High → Low</option>
+    </select>
   </div>
 
-  <div class="list" *ngIf="!loading && tickets.length > 0">
-    <div
-      class="ticket"
-      *ngFor="let t of tickets"
-      [routerLink]="['/tickets', t.id]"
-      style="cursor: pointer"
-    >
-      <div class="top">
-        <div class="title">{{ t.title }}</div>
+  <!-- ERROR MESSAGE -->
+  <div *ngIf="errorMsg" class="error hint">{{ errorMsg }}</div>
+
+  <!-- TICKET LIST -->
+  <ng-container *ngIf="!loading; else loadingTpl">
+    <div class="list">
+      <div class="ticket-card" *ngFor="let t of filteredTickets" [routerLink]="['/tickets', t.id]">
+        <h3>{{ t.title }}</h3>
+        <p>{{ t.description }}</p>
+
         <div class="meta">
-          <span class="pill">{{ t.status }}</span>
-          <span class="pill priority">{{ t.priority }}</span>
+          <div class="date">Created: {{ t.created_at | date: 'dd.MM.yyyy HH:mm' }}</div>
+          <div class="id">ID: {{ t.id }}</div>
+        </div>
+
+        <div class="badges">
+          <span class="badge status" [ngClass]="t.status">{{ t.status }}</span>
+          <span class="badge priority" [ngClass]="t.priority">{{ t.priority }}</span>
         </div>
       </div>
-
-      <div class="desc" *ngIf="t.description">{{ t.description }}</div>
-
-      <div class="bottom">
-        <span class="small">ID: {{ t.id }}</span>
-        <span class="small">Created: {{ t.created_at }}</span>
-      </div>
     </div>
-  </div>
+  </ng-container>
+
+  <ng-template #loadingTpl>
+    <div class="loading">Loading tickets...</div>
+  </ng-template>
 </div>
+<!-- END .page -->

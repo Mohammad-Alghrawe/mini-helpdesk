@@ -1,4 +1,6 @@
-use crate::models::ticket::{CreateTicketRequest, Ticket, TicketPriority, TicketStatus};
+use crate::models::ticket::{
+    CreateTicketRequest, Ticket, TicketPriority, TicketStatus, UpdateTicketRequest,
+};
 use sqlx::Row;
 use sqlx::SqlitePool;
 use time::OffsetDateTime;
@@ -41,6 +43,47 @@ fn str_to_status(s: &str) -> TicketStatus {
         "closed" => TicketStatus::Closed,
         _ => TicketStatus::Open,
     }
+}
+
+pub async fn update_ticket(
+    pool: &sqlx::SqlitePool,
+    id: &str,
+    payload: UpdateTicketRequest,
+) -> Result<Option<Ticket>, sqlx::Error> {
+    // Convert enums -> strings (match your DB values)
+    let status_str = payload.status.as_ref().map(status_to_str);
+    let priority_str = payload.priority.as_ref().map(priority_to_str);
+
+    let row = sqlx::query(
+        r#"
+        UPDATE tickets
+        SET
+          title       = COALESCE(?, title),
+          description = COALESCE(?, description),
+          status      = COALESCE(?, status),
+          priority    = COALESCE(?, priority),
+          updated_at  = STRFTIME('%Y-%m-%dT%H:%M:%fZ','now')
+        WHERE id = ?
+        RETURNING id, title, description, priority, status, created_at, updated_at
+        "#,
+    )
+    .bind(&payload.title) // 1) title
+    .bind(&payload.description) // 2) description
+    .bind(status_str) // 3) status
+    .bind(priority_str) // 4) priority
+    .bind(id) // 5) id
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(row.map(|r| Ticket {
+        id: r.get::<String, _>("id"),
+        title: r.get::<String, _>("title"),
+        description: r.get::<Option<String>, _>("description"),
+        priority: str_to_priority(&r.get::<String, _>("priority")),
+        status: str_to_status(&r.get::<String, _>("status")),
+        created_at: r.get::<String, _>("created_at"),
+        updated_at: r.get::<String, _>("updated_at"),
+    }))
 }
 
 pub async fn create_ticket(
@@ -107,4 +150,45 @@ pub async fn list_tickets(pool: &SqlitePool) -> Result<Vec<Ticket>, sqlx::Error>
         .collect();
 
     Ok(tickets)
+}
+
+pub async fn get_ticket_by_id(
+    pool: &sqlx::SqlitePool,
+    id: &str,
+) -> Result<Option<Ticket>, sqlx::Error> {
+    let row = sqlx::query(
+        r#"
+        SELECT id, title, description, priority, status, created_at, updated_at
+        FROM tickets
+        WHERE id = ?
+        "#,
+    )
+    .bind(id)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(row.map(|r| Ticket {
+        id: r.get::<String, _>("id"),
+        title: r.get::<String, _>("title"),
+        description: r.get::<Option<String>, _>("description"),
+        priority: str_to_priority(&r.get::<String, _>("priority")),
+        status: str_to_status(&r.get::<String, _>("status")),
+        created_at: r.get::<String, _>("created_at"),
+        updated_at: r.get::<String, _>("updated_at"),
+    }))
+}
+
+pub async fn delete_ticket(pool: &SqlitePool, id: &str) -> Result<bool, sqlx::Error> {
+    let result = sqlx::query(
+        r#"
+        DELETE FROM tickets
+        WHERE id = ?
+        "#,
+    )
+    .bind(id)
+    .execute(pool)
+    .await?;
+
+    // rows_affected() == 1 means deleted
+    Ok(result.rows_affected() == 1)
 }

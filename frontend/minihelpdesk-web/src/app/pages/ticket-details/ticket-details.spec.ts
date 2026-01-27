@@ -3,19 +3,18 @@ import {
   TestBed,
 } from '@angular/core/testing';
 
-import { TicketList } from './ticket-list.component';
+import { TicketDetailsComponent } from './ticket-details';
 
-describe('TicketList', () => {
-  let component: TicketList;
-  let fixture: ComponentFixture<TicketList>;
-
+describe('TicketDetails', () => {
+ let component: TicketDetailsComponent;
+let fixture: ComponentFixture<TicketDetailsComponent>;
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [TicketList]
+      imports: [TicketDetailsComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(TicketList);
+    fixture = TestBed.createComponent(TicketDetailsComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

@@ -1,4 +1,6 @@
-use crate::models::ticket::{CreateTicketRequest, Ticket, TicketPriority, TicketStatus};
+use crate::models::ticket::{
+    CreateTicketRequest, Ticket, TicketPriority, TicketStatus, UpdateTicketRequest,
+};
 use sqlx::Row;
 use sqlx::SqlitePool;
 use time::OffsetDateTime;
@@ -107,4 +109,30 @@ pub async fn list_tickets(pool: &SqlitePool) -> Result<Vec<Ticket>, sqlx::Error>
         .collect();
 
     Ok(tickets)
+}
+
+pub async fn get_ticket_by_id(
+    pool: &sqlx::SqlitePool,
+    id: &str,
+) -> Result<Option<Ticket>, sqlx::Error> {
+    let row = sqlx::query(
+        r#"
+        SELECT id, title, description, priority, status, created_at, updated_at
+        FROM tickets
+        WHERE id = ?
+        "#,
+    )
+    .bind(id)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(row.map(|r| Ticket {
+        id: r.get::<String, _>("id"),
+        title: r.get::<String, _>("title"),
+        description: r.get::<Option<String>, _>("description"),
+        priority: str_to_priority(&r.get::<String, _>("priority")),
+        status: str_to_status(&r.get::<String, _>("status")),
+        created_at: r.get::<String, _>("created_at"),
+        updated_at: r.get::<String, _>("updated_at"),
+    }))
 }

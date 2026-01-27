@@ -45,6 +45,43 @@ fn str_to_status(s: &str) -> TicketStatus {
     }
 }
 
+pub async fn update_ticket(
+    pool: &sqlx::SqlitePool,
+    id: &str,
+    payload: UpdateTicketRequest,
+) -> Result<Option<Ticket>, sqlx::Error> {
+    // Convert enums -> strings (match your DB values)
+    let status_str = payload.status.as_ref().map(status_to_str);
+    let priority_str = payload.priority.as_ref().map(priority_to_str);
+
+    let row = sqlx::query(
+        r#"
+        UPDATE tickets
+        SET
+          status     = COALESCE(?, status),
+          priority   = COALESCE(?, priority),
+          updated_at = STRFTIME('%Y-%m-%dT%H:%M:%fZ','now')
+        WHERE id = ?
+        RETURNING id, title, description, priority, status, created_at, updated_at
+        "#,
+    )
+    .bind(status_str)
+    .bind(priority_str)
+    .bind(id)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(row.map(|r| Ticket {
+        id: r.get::<String, _>("id"),
+        title: r.get::<String, _>("title"),
+        description: r.get::<Option<String>, _>("description"),
+        priority: str_to_priority(&r.get::<String, _>("priority")),
+        status: str_to_status(&r.get::<String, _>("status")),
+        created_at: r.get::<String, _>("created_at"),
+        updated_at: r.get::<String, _>("updated_at"),
+    }))
+}
+
 pub async fn create_ticket(
     pool: &SqlitePool,
     req: CreateTicketRequest,

@@ -57,29 +57,37 @@ export class TicketDetailsComponent {
       });
   }
 
-  saveChanges() {
+updateField(field: 'title' | 'description', value: string) {
     const t = this.ticket();
     if (!t) return;
+    this.ticket.set({ ...t, [field]: value });
+}
 
-    this.saving.set(true);
+ saveChanges() {
+  const t = this.ticket();
+  if (!t) return;
 
-    const body = {
-      status: t.status,
-      priority: t.priority,
-    };
+  this.saving.set(true);
 
-    this.http.patch<{ ticket: Ticket }>(
-      `http://localhost:8080/api/tickets/${t.id}`,
-      body
-    ).subscribe({
-      next: (res) => {
-        this.ticket.set(res.ticket);
-        this.saving.set(false);
-      },
-      error: () => {
-        this.error.set('Failed to save changes.');
-        this.saving.set(false);
-      }
-    });
-  }
+  const body = {
+    title: t.title,
+    description: t.description,
+    status: t.status,
+    priority: t.priority,
+  };
+
+  this.http.patch<{ ticket: Ticket }>(
+    `http://localhost:8080/api/tickets/${t.id}`,
+    body
+  ).subscribe({
+    next: (res) => {
+      this.ticket.set(res.ticket);
+      this.saving.set(false);
+    },
+    error: () => {
+      this.error.set('Failed to save changes.');
+      this.saving.set(false);
+    }
+  });
+}
 }

@@ -16,11 +16,14 @@ pub struct CreateTicketRequest {
     pub title: String,
     pub description: Option<String>,
     pub priority: Option<TicketPriority>,
+    pub status: Option<TicketStatus>,
 }
 
 /// NEW: PATCH payload
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateTicketRequest {
+    pub title: Option<String>,
+    pub description: Option<String>,
     pub priority: Option<TicketPriority>,
     pub status: Option<TicketStatus>,
 }

@@ -1,42 +1,62 @@
-<div class="container">
-  <div *ngIf="loading()">Loading ticket...</div>
-  <div *ngIf="error()" class="error">{{ error() }}</div>
-
-  <div *ngIf="ticket() && !loading()">
+<div class="ticket-container" *ngIf="!loading() && ticket()">
+  <div class="header-row">
     <h2>Ticket Details</h2>
+    <div class="badges">
+      <span class="badge status" [ngClass]="ticket()?.status">{{ ticket()?.status }}</span>
+      <span class="badge priority" [ngClass]="ticket()?.priority">{{ ticket()?.priority }}</span>
+    </div>
+  </div>
 
-    <p><strong>Title:</strong> {{ ticket()?.title }}</p>
-    <p><strong>Description:</strong> {{ ticket()?.description }}</p>
+  <div class="card">
+    <!-- Editable Title -->
+    <label class="label">Title</label>
+    <input
+      class="input"
+      [ngModel]="ticket()?.title"
+      (ngModelChange)="updateField('title', $event)"
+    />
+    <!-- Editable Description -->
+    <label class="label">Description</label>
+    <textarea
+      class="textarea"
+      rows="4"
+      [ngModel]="ticket()?.description"
+      (ngModelChange)="updateField('description', $event)"
+    ></textarea>
+    <div class="row">
+      <!-- Status dropdown -->
+      <div class="col">
+        <label class="label">Status</label>
+        <select class="select" [(ngModel)]="ticket()!.status">
+          <option value="open">Open</option>
+          <option value="in_progress">In Progress</option>
+          <option value="closed">Closed</option>
+        </select>
+      </div>
 
-    <p><strong>Created:</strong> {{ ticket()?.created_at }}</p>
-    <p><strong>Updated:</strong> {{ ticket()?.updated_at }}</p>
+      <!-- Priority dropdown -->
+      <div class="col">
+        <label class="label">Priority</label>
+        <select class="select" [(ngModel)]="ticket()!.priority">
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+        </select>
+      </div>
+    </div>
 
-    <hr />
+    <div class="meta">
+      <p>Created: {{ ticket()?.created_at }}</p>
+      <p>Updated: {{ ticket()?.updated_at }}</p>
+    </div>
 
-    <label>
-      Status:
-      <select [(ngModel)]="ticket()!.status">
-        <option value="open">Open</option>
-        <option value="in_progress">In Progress</option>
-        <option value="closed">Closed</option>
-      </select>
-    </label>
-
-    <br /><br />
-
-    <label>
-      Priority:
-      <select [(ngModel)]="ticket()!.priority">
-        <option value="low">Low</option>
-        <option value="medium">Medium</option>
-        <option value="high">High</option>
-      </select>
-    </label>
-
-    <br /><br />
-
-    <button (click)="saveChanges()" [disabled]="saving()">
-      {{ saving() ? 'Saving...' : 'Save Changes' }}
-    </button>
+    <div class="actions">
+      <button class="btn save" (click)="saveChanges()" [disabled]="saving()">
+        {{ saving() ? 'Saving...' : 'Save Changes' }}
+      </button>
+    </div>
   </div>
 </div>
+
+<div *ngIf="loading()" class="loading">Loading ticket...</div>
+<div *ngIf="error()" class="error">{{ error() }}</div>

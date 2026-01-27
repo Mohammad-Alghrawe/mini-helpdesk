@@ -58,16 +58,20 @@ pub async fn update_ticket(
         r#"
         UPDATE tickets
         SET
-          status     = COALESCE(?, status),
-          priority   = COALESCE(?, priority),
-          updated_at = STRFTIME('%Y-%m-%dT%H:%M:%fZ','now')
+          title       = COALESCE(?, title),
+          description = COALESCE(?, description),
+          status      = COALESCE(?, status),
+          priority    = COALESCE(?, priority),
+          updated_at  = STRFTIME('%Y-%m-%dT%H:%M:%fZ','now')
         WHERE id = ?
         RETURNING id, title, description, priority, status, created_at, updated_at
         "#,
     )
-    .bind(status_str)
-    .bind(priority_str)
-    .bind(id)
+    .bind(&payload.title) // 1) title
+    .bind(&payload.description) // 2) description
+    .bind(status_str) // 3) status
+    .bind(priority_str) // 4) priority
+    .bind(id) // 5) id
     .fetch_optional(pool)
     .await?;
 

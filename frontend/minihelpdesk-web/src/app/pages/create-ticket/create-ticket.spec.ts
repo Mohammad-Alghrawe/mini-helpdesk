@@ -1,6 +1,9 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import {
+  ComponentFixture,
+  TestBed,
+} from '@angular/core/testing';
 
-import { CreateTicket } from './create-ticket';
+import { CreateTicket } from './create-ticket/create-ticket.component.ts';
 
 describe('CreateTicket', () => {
   let component: CreateTicket;

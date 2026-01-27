@@ -63,9 +63,8 @@
         <p>{{ t.description }}</p>
 
         <div class="meta">
-          <span>ID: {{ t.id }}</span>
-          <span>•</span>
-          <span>Created: {{ t.created_at }}</span>
+          <div class="date">Created: {{ t.created_at | date: 'dd.MM.yyyy HH:mm' }}</div>
+          <div class="id">ID: {{ t.id }}</div>
         </div>
 
         <div class="badges">

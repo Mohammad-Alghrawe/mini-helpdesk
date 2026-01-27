@@ -52,8 +52,9 @@
     </div>
 
     <div class="meta">
-      <p>Created: {{ ticket()?.created_at }}</p>
-      <p>Updated: {{ ticket()?.updated_at }}</p>
+      <div>Created: {{ ticket()?.created_at | date: 'dd.MM.yyyy HH:mm' }}</div>
+      <div>Updated: {{ ticket()?.updated_at | date: 'dd.MM.yyyy HH:mm' }}</div>
+      <div>ID: {{ ticket()?.id }}</div>
     </div>
 
     <div class="actions">

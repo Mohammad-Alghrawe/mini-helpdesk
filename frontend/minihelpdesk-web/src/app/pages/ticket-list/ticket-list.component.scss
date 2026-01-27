@@ -250,3 +250,12 @@
   cursor: pointer;
 }
 
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: #666;
+}
+

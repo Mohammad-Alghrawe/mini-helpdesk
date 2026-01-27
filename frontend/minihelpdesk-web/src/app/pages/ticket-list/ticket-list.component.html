@@ -1,8 +1,44 @@
 <div class="page">
-  <h1>Tickets</h1>
+  <div class="header">
+    <h1>Tickets</h1>
 
-  <p>
-    Ticket list UI will be implemented in Step 9. For now, create a ticket here:
-    <a routerLink="/tickets/new">Create Ticket</a>
-  </p>
+    <div class="actions">
+      <a class="btn" routerLink="/tickets/new">+ New Ticket</a>
+      <button class="btn secondary" (click)="load()" [disabled]="loading">
+        {{ loading ? 'Loading...' : 'Refresh' }}
+      </button>
+    </div>
+  </div>
+
+  <div class="hint error" *ngIf="errorMsg">{{ errorMsg }}</div>
+
+  <div class="card" *ngIf="loading">Loading tickets...</div>
+
+  <div class="card" *ngIf="!loading && tickets.length === 0 && !errorMsg">
+    No tickets yet. Create your first one.
+  </div>
+
+  <div class="list" *ngIf="!loading && tickets.length > 0">
+    <div
+      class="ticket"
+      *ngFor="let t of tickets"
+      [routerLink]="['/tickets', t.id]"
+      style="cursor: pointer"
+    >
+      <div class="top">
+        <div class="title">{{ t.title }}</div>
+        <div class="meta">
+          <span class="pill">{{ t.status }}</span>
+          <span class="pill priority">{{ t.priority }}</span>
+        </div>
+      </div>
+
+      <div class="desc" *ngIf="t.description">{{ t.description }}</div>
+
+      <div class="bottom">
+        <span class="small">ID: {{ t.id }}</span>
+        <span class="small">Created: {{ t.created_at }}</span>
+      </div>
+    </div>
+  </div>
 </div>

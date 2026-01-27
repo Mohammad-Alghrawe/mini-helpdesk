@@ -1,0 +1,36 @@
+<div class="page">
+  <h1>Create Ticket</h1>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="card">
+    <label>
+      Title *
+      <input type="text" formControlName="title" placeholder="Short summary..." />
+    </label>
+
+    <div class="hint error" *ngIf="form.controls.title.touched && form.controls.title.invalid">
+      Title is required (min 3 characters).
+    </div>
+
+    <label>
+      Description
+      <textarea
+        rows="5"
+        formControlName="description"
+        placeholder="Describe the issue..."
+      ></textarea>
+    </label>
+
+    <label>
+      Priority
+      <select formControlName="priority">
+        <option *ngFor="let p of priorities" [value]="p">{{ p }}</option>
+      </select>
+    </label>
+
+    <div class="hint error" *ngIf="errorMsg">{{ errorMsg }}</div>
+
+    <button type="submit" [disabled]="loading || form.invalid">
+      {{ loading ? 'Creating...' : 'Create Ticket' }}
+    </button>
+  </form>
+</div>

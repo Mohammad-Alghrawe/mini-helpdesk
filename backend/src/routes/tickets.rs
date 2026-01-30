@@ -6,44 +6,11 @@ use axum::{
 };
 
 use crate::{
-    models::ticket::CreateTicketRequest, repositories::ticket_repository, state::AppState,
+    auth::jwt::Claims,
+    models::ticket::{CreateTicketRequest, Ticket, UpdateTicketRequest},
+    repositories::ticket_repository,
+    state::AppState,
 };
-
-use crate::auth::jwt::Claims;
-use crate::models::ticket::Ticket;
-use crate::models::ticket::UpdateTicketRequest;
-
-async fn update_ticket(
-    State(state): State<AppState>,
-    Extension(_claims): Extension<Claims>,
-    Path(id): Path<String>,
-    Json(payload): Json<UpdateTicketRequest>,
-) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
-    // must provide at least one field
-    if payload.status.is_none() && payload.priority.is_none() {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(serde_json::json!({ "error": "provide status and/or priority" })),
-        ));
-    }
-
-    let updated = ticket_repository::update_ticket(&state.db, &id, payload)
-        .await
-        .map_err(|e| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({ "error": "db error", "details": e.to_string() })),
-            )
-        })?;
-
-    match updated {
-        Some(t) => Ok(Json(serde_json::json!({ "ticket": t }))),
-        None => Err((
-            StatusCode::NOT_FOUND,
-            Json(serde_json::json!({ "error": "ticket not found" })),
-        )),
-    }
-}
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -58,10 +25,9 @@ pub fn router() -> Router<AppState> {
 
 async fn create_ticket(
     State(state): State<AppState>,
-    Extension(_claims): Extension<Claims>,
+    Extension(claims): Extension<Claims>,
     Json(payload): Json<CreateTicketRequest>,
 ) -> Result<(StatusCode, Json<serde_json::Value>), (StatusCode, Json<serde_json::Value>)> {
-    // Basic validation (Sprint 1 level)
     if payload.title.trim().is_empty() {
         return Err((
             StatusCode::BAD_REQUEST,
@@ -69,7 +35,7 @@ async fn create_ticket(
         ));
     }
 
-    let created = ticket_repository::create_ticket(&state.db, payload)
+    let created = ticket_repository::create_ticket(&state.db, claims.sub, payload)
         .await
         .map_err(|e| {
             (
@@ -86,9 +52,9 @@ async fn create_ticket(
 
 async fn list_tickets(
     State(state): State<AppState>,
-    Extension(_claims): Extension<Claims>,
+    Extension(claims): Extension<Claims>,
 ) -> Result<Json<Vec<Ticket>>, StatusCode> {
-    let tickets = ticket_repository::list_tickets(&state.db)
+    let tickets = ticket_repository::list_tickets(&state.db, claims.sub)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
@@ -97,10 +63,10 @@ async fn list_tickets(
 
 async fn get_ticket_by_id(
     State(state): State<AppState>,
-    Extension(_claims): Extension<Claims>,
+    Extension(claims): Extension<Claims>,
     Path(id): Path<String>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
-    let ticket = ticket_repository::get_ticket_by_id(&state.db, &id)
+    let ticket = ticket_repository::get_ticket_by_id(&state.db, claims.sub, &id)
         .await
         .map_err(|e| {
             (
@@ -118,12 +84,47 @@ async fn get_ticket_by_id(
     }
 }
 
+async fn update_ticket(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<String>,
+    Json(payload): Json<UpdateTicketRequest>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
+    if payload.status.is_none()
+        && payload.priority.is_none()
+        && payload.title.is_none()
+        && payload.description.is_none()
+    {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "error": "provide at least one field" })),
+        ));
+    }
+
+    let updated = ticket_repository::update_ticket(&state.db, claims.sub, &id, payload)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "error": "db error", "details": e.to_string() })),
+            )
+        })?;
+
+    match updated {
+        Some(t) => Ok(Json(serde_json::json!({ "ticket": t }))),
+        None => Err((
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({ "error": "ticket not found" })),
+        )),
+    }
+}
+
 async fn delete_ticket(
     State(state): State<AppState>,
-    Extension(_claims): Extension<Claims>,
-    axum::extract::Path(id): axum::extract::Path<String>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<String>,
 ) -> Result<StatusCode, (StatusCode, Json<serde_json::Value>)> {
-    let deleted = ticket_repository::delete_ticket(&state.db, &id)
+    let deleted = ticket_repository::delete_ticket(&state.db, claims.sub, &id)
         .await
         .map_err(|e| {
             (
@@ -133,7 +134,7 @@ async fn delete_ticket(
         })?;
 
     if deleted {
-        Ok(StatusCode::NO_CONTENT) // 204
+        Ok(StatusCode::NO_CONTENT)
     } else {
         Err((
             StatusCode::NOT_FOUND,

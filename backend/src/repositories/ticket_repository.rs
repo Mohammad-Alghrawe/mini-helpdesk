@@ -47,6 +47,7 @@ fn str_to_status(s: &str) -> TicketStatus {
 
 pub async fn update_ticket(
     pool: &sqlx::SqlitePool,
+    owner_id: i64,
     id: &str,
     payload: UpdateTicketRequest,
 ) -> Result<Option<Ticket>, sqlx::Error> {
@@ -63,8 +64,8 @@ pub async fn update_ticket(
           status      = COALESCE(?, status),
           priority    = COALESCE(?, priority),
           updated_at  = STRFTIME('%Y-%m-%dT%H:%M:%fZ','now')
-        WHERE id = ?
-        RETURNING id, title, description, priority, status, created_at, updated_at
+        WHERE id = ? AND owner_id = ?
+        RETURNING id, owner_id, title, description, priority, status, created_at, updated_at
         "#,
     )
     .bind(&payload.title) // 1) title
@@ -72,11 +73,13 @@ pub async fn update_ticket(
     .bind(status_str) // 3) status
     .bind(priority_str) // 4) priority
     .bind(id) // 5) id
+    .bind(owner_id) // 6) owner_id
     .fetch_optional(pool)
     .await?;
 
     Ok(row.map(|r| Ticket {
         id: r.get::<String, _>("id"),
+        owner_id: r.get::<i64, _>("owner_id"),
         title: r.get::<String, _>("title"),
         description: r.get::<Option<String>, _>("description"),
         priority: str_to_priority(&r.get::<String, _>("priority")),
@@ -88,6 +91,7 @@ pub async fn update_ticket(
 
 pub async fn create_ticket(
     pool: &SqlitePool,
+    owner_id: i64,
     req: CreateTicketRequest,
 ) -> Result<Ticket, sqlx::Error> {
     let id = Uuid::new_v4().to_string();
@@ -99,11 +103,12 @@ pub async fn create_ticket(
 
     sqlx::query(
         r#"
-        INSERT INTO tickets (id, title, description, priority, status, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO tickets (id, owner_id, title, description, priority, status, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?,?)
         "#,
     )
     .bind(&id)
+    .bind(&owner_id)
     .bind(&req.title)
     .bind(&req.description)
     .bind(priority_to_str(&priority))
@@ -115,6 +120,7 @@ pub async fn create_ticket(
 
     Ok(Ticket {
         id,
+        owner_id,
         title: req.title,
         description: req.description,
         priority,
@@ -124,15 +130,16 @@ pub async fn create_ticket(
     })
 }
 
-pub async fn list_tickets(pool: &SqlitePool) -> Result<Vec<Ticket>, sqlx::Error> {
-    // Runtime query (no DATABASE_URL needed at compile time)
+pub async fn list_tickets(pool: &SqlitePool, owner_id: i64) -> Result<Vec<Ticket>, sqlx::Error> {
     let rows = sqlx::query(
         r#"
-        SELECT id, title, description, priority, status, created_at, updated_at
+        SELECT id, owner_id, title, description, priority, status, created_at, updated_at
         FROM tickets
+        WHERE owner_id = ?
         ORDER BY created_at DESC
         "#,
     )
+    .bind(owner_id)
     .fetch_all(pool)
     .await?;
 
@@ -140,6 +147,7 @@ pub async fn list_tickets(pool: &SqlitePool) -> Result<Vec<Ticket>, sqlx::Error>
         .into_iter()
         .map(|r| Ticket {
             id: r.get::<String, _>("id"),
+            owner_id: r.get::<i64, _>("owner_id"),
             title: r.get::<String, _>("title"),
             description: r.get::<Option<String>, _>("description"),
             priority: str_to_priority(&r.get::<String, _>("priority")),
@@ -154,21 +162,24 @@ pub async fn list_tickets(pool: &SqlitePool) -> Result<Vec<Ticket>, sqlx::Error>
 
 pub async fn get_ticket_by_id(
     pool: &sqlx::SqlitePool,
+    owner_id: i64,
     id: &str,
 ) -> Result<Option<Ticket>, sqlx::Error> {
     let row = sqlx::query(
         r#"
-        SELECT id, title, description, priority, status, created_at, updated_at
+        SELECT id, owner_id, title, description, priority, status, created_at, updated_at
         FROM tickets
-        WHERE id = ?
+        WHERE id = ? AND owner_id = ?
         "#,
     )
     .bind(id)
+    .bind(owner_id)
     .fetch_optional(pool)
     .await?;
 
     Ok(row.map(|r| Ticket {
         id: r.get::<String, _>("id"),
+        owner_id: r.get::<i64, _>("owner_id"),
         title: r.get::<String, _>("title"),
         description: r.get::<Option<String>, _>("description"),
         priority: str_to_priority(&r.get::<String, _>("priority")),
@@ -178,17 +189,21 @@ pub async fn get_ticket_by_id(
     }))
 }
 
-pub async fn delete_ticket(pool: &SqlitePool, id: &str) -> Result<bool, sqlx::Error> {
+pub async fn delete_ticket(
+    pool: &SqlitePool,
+    owner_id: i64,
+    id: &str,
+) -> Result<bool, sqlx::Error> {
     let result = sqlx::query(
         r#"
         DELETE FROM tickets
-        WHERE id = ?
+        WHERE id = ? AND owner_id = ?
         "#,
     )
     .bind(id)
+    .bind(owner_id)
     .execute(pool)
     .await?;
 
-    // rows_affected() == 1 means deleted
     Ok(result.rows_affected() == 1)
 }

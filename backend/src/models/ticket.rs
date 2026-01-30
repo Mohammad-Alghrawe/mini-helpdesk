@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Ticket {
     pub id: String,
+    pub owner_id: i64,
     pub title: String,
     pub description: Option<String>,
     pub priority: TicketPriority,

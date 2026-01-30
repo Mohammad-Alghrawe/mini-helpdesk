@@ -1,9 +1,12 @@
-use axum::{routing::get, Json, Router};
+use axum::{
+    routing::{get, post},
+    Json, Router,
+};
 use serde_json::json;
 use sqlx::SqlitePool;
 use std::net::SocketAddr;
 use tower_http::cors::{Any, CorsLayer};
-
+mod auth;
 mod models;
 mod repositories;
 mod routes;
@@ -51,9 +54,9 @@ async fn main() {
         .allow_headers(Any);
 
     // Router
-    let app = Router::new()
+    let app = Router::<state::AppState>::new()
         .route("/health", get(health))
-        .nest("/api", routes::tickets::router())
+        .route("/api/auth/login", post(routes::auth::login))
         .with_state(app_state)
         .layer(cors);
 

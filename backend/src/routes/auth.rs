@@ -6,7 +6,6 @@ use crate::{
     models::user::{LoginRequest, User},
 };
 
-
 #[derive(serde::Serialize)]
 pub struct LoginResponse {
     pub token: String,

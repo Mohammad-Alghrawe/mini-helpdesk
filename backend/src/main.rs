@@ -1,3 +1,5 @@
+use crate::state::AppState;
+use axum::middleware::from_fn;
 use axum::{
     routing::{get, post},
     Json, Router,
@@ -7,6 +9,7 @@ use sqlx::SqlitePool;
 use std::net::SocketAddr;
 use tower_http::cors::{Any, CorsLayer};
 mod auth;
+mod middleware;
 mod models;
 mod repositories;
 mod routes;
@@ -18,6 +21,7 @@ async fn health() -> Json<serde_json::Value> {
 
 #[tokio::main]
 async fn main() {
+    dotenvy::dotenv().ok();
     println!("Starting Mini-Helpdesk API...");
 
     // Host/Port
@@ -54,9 +58,13 @@ async fn main() {
         .allow_headers(Any);
 
     // Router
-    let app = Router::<state::AppState>::new()
+    let app = Router::<AppState>::new()
         .route("/health", get(health))
         .route("/api/auth/login", post(routes::auth::login))
+        .nest(
+            "/api/tickets",
+            routes::tickets::router().layer(from_fn(middleware::auth::jwt_auth)),
+        )
         .with_state(app_state)
         .layer(cors);
 

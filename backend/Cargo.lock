@@ -148,6 +148,7 @@ dependencies = [
  "argon2",
  "axum",
  "chrono",
+ "dotenvy",
  "jsonwebtoken",
  "password-hash",
  "rand",

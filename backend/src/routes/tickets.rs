@@ -2,17 +2,20 @@ use axum::{
     extract::{Path, State},
     http::StatusCode,
     routing::{get, post},
-    Json, Router,
+    Extension, Json, Router,
 };
 
 use crate::{
     models::ticket::CreateTicketRequest, repositories::ticket_repository, state::AppState,
 };
 
+use crate::auth::jwt::Claims;
+use crate::models::ticket::Ticket;
 use crate::models::ticket::UpdateTicketRequest;
 
 async fn update_ticket(
     State(state): State<AppState>,
+    Extension(_claims): Extension<Claims>,
     Path(id): Path<String>,
     Json(payload): Json<UpdateTicketRequest>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
@@ -44,9 +47,9 @@ async fn update_ticket(
 
 pub fn router() -> Router<AppState> {
     Router::new()
-        .route("/tickets", post(create_ticket).get(list_tickets))
+        .route("/", post(create_ticket).get(list_tickets))
         .route(
-            "/tickets/:id",
+            "/:id",
             get(get_ticket_by_id)
                 .patch(update_ticket)
                 .delete(delete_ticket),
@@ -55,6 +58,7 @@ pub fn router() -> Router<AppState> {
 
 async fn create_ticket(
     State(state): State<AppState>,
+    Extension(_claims): Extension<Claims>,
     Json(payload): Json<CreateTicketRequest>,
 ) -> Result<(StatusCode, Json<serde_json::Value>), (StatusCode, Json<serde_json::Value>)> {
     // Basic validation (Sprint 1 level)
@@ -82,21 +86,18 @@ async fn create_ticket(
 
 async fn list_tickets(
     State(state): State<AppState>,
-) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
+    Extension(_claims): Extension<Claims>,
+) -> Result<Json<Vec<Ticket>>, StatusCode> {
     let tickets = ticket_repository::list_tickets(&state.db)
         .await
-        .map_err(|e| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({ "error": "db error", "details": e.to_string() })),
-            )
-        })?;
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    Ok(Json(serde_json::json!({ "tickets": tickets })))
+    Ok(Json(tickets))
 }
 
 async fn get_ticket_by_id(
     State(state): State<AppState>,
+    Extension(_claims): Extension<Claims>,
     Path(id): Path<String>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
     let ticket = ticket_repository::get_ticket_by_id(&state.db, &id)
@@ -119,6 +120,7 @@ async fn get_ticket_by_id(
 
 async fn delete_ticket(
     State(state): State<AppState>,
+    Extension(_claims): Extension<Claims>,
     axum::extract::Path(id): axum::extract::Path<String>,
 ) -> Result<StatusCode, (StatusCode, Json<serde_json::Value>)> {
     let deleted = ticket_repository::delete_ticket(&state.db, &id)

@@ -6,6 +6,9 @@ use crate::{
     models::user::{LoginRequest, User},
 };
 
+use crate::auth::password::hash_password;
+use crate::models::user::RegisterRequest;
+
 #[derive(serde::Serialize)]
 pub struct LoginResponse {
     pub token: String,
@@ -52,4 +55,63 @@ pub async fn login(
     };
 
     Ok(Json(LoginResponse { token, user }))
+}
+
+pub async fn register(
+    State(state): State<AppState>,
+    Json(payload): Json<RegisterRequest>,
+) -> Result<(StatusCode, Json<serde_json::Value>), (StatusCode, Json<serde_json::Value>)> {
+    let email = payload.email.trim().to_lowercase();
+
+    if email.is_empty() || !email.contains('@') {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "error": "invalid email" })),
+        ));
+    }
+
+    if payload.password.len() < 6 {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "error": "password must be at least 6 chars" })),
+        ));
+    }
+
+    let password_hash = hash_password(&payload.password).map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": "hash error", "details": e.to_string() })),
+        )
+    })?;
+
+    let res = sqlx::query!(
+        r#"
+        INSERT INTO users (email, password_hash, role)
+        VALUES (?, ?, 'user')
+        "#,
+        email,
+        password_hash
+    )
+    .execute(&state.db)
+    .await;
+
+    match res {
+        Ok(_) => Ok((
+            StatusCode::CREATED,
+            Json(serde_json::json!({ "email": email })),
+        )),
+        Err(e) => {
+            let msg = e.to_string();
+            if msg.contains("UNIQUE") || msg.contains("constraint") {
+                return Err((
+                    StatusCode::CONFLICT,
+                    Json(serde_json::json!({ "error": "email already exists" })),
+                ));
+            }
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "error": "db error", "details": msg })),
+            ))
+        }
+    }
 }

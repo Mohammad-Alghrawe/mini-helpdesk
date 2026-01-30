@@ -60,6 +60,7 @@ async fn main() {
     // Router
     let app = Router::<AppState>::new()
         .route("/health", get(health))
+        .route("/api/auth/register", post(routes::auth::register))
         .route("/api/auth/login", post(routes::auth::login))
         .nest(
             "/api/tickets",
